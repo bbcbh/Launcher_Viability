@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Main-Class: sim.Simulation_Viability
+Class-Path: . Simulation_Viability_lib/commons-math3-3.6.1.jar Simulatio
+ n_Viability_lib/jgrapht-core-1.5.1.jar Simulation_Viability_lib/jheaps-
+ 0.13.jar Simulation_Viability_lib/jgrapht-ext-1.5.1.jar Simulation_Viab
+ ility_lib/jgraphx-4.1.0.jar Simulation_Viability_lib/commons-compress-1
+ .21.jar Simulation_Viability_lib/commons-io-2.11.0.jar Simulation_Viabi
+ lity_lib/xz-1.9.jar
+
