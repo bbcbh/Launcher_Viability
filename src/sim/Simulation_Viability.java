@@ -13,7 +13,7 @@ public class Simulation_Viability extends Simulation_ClusterModelTransmission {
 			System.out.println(USAGE_INFO);
 			System.exit(0);
 		} else {
-			Simulation_ClusterModelTransmission.launch(args);
+			Simulation_ClusterModelTransmission.launch(args, new Simulation_Viability());
 		}
 	}
 	
