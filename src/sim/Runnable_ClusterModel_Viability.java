@@ -1,6 +1,5 @@
 package sim;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -161,8 +160,35 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	}
 
 	@Override
+	public void refreshField(int fieldId, int currentTime, boolean clearAll, String orginal_field) {		
+		super.refreshField(fieldId, currentTime, clearAll, orginal_field);		
+	}
+
+	@Override
+	protected void simulate_transmission_success_act(int currentTime, int inf_id, Integer pid_inf_src, int pid_inf_tar,
+			int src_site, int tar_site) {
+		if (inf_id == 1) {
+
+			ArrayList<Integer> infect_arr = map_currently_infectious.get(String.format("1,%d", src_site));
+
+			String disp = String.format("Success: %d: %d (%d)-> %d (%d) total=%d RNG=%d", currentTime, pid_inf_src, src_site,
+					pid_inf_tar, tar_site, infect_arr.size(), RNG.nextLong());
+			System.out.println(disp);
+		}
+		super.simulate_transmission_success_act(currentTime, inf_id, pid_inf_src, pid_inf_tar, src_site, tar_site);
+	}
+
+	@Override
 	protected void simulate_transmission_failed_act(int currentTime, int inf_id, Integer pid_inf_src, int pid_inf_tar,
 			int src_site, int tar_site) {
+		if (inf_id == 1) {
+			ArrayList<Integer> infect_arr = map_currently_infectious.get(String.format("1,%d", src_site));
+			String disp = String.format("Failed: %d: %d (%d)-> %d (%d) total=%d RNG=%d", currentTime, pid_inf_src, src_site,
+					pid_inf_tar, tar_site, infect_arr.size(), RNG.nextLong());
+			System.out.println(disp);
+
+		}
+
 		// Non-viable from transmission
 		super.simulate_transmission_failed_act(currentTime, inf_id, pid_inf_src, pid_inf_tar, src_site, tar_site);
 		if (prob_non_viabile_from_transmission[inf_id][src_site][tar_site] > 0) {
@@ -236,7 +262,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 		if (!hasInfectiousPreTreatment) {
 			cumul_treatment_non_viable[infId * NUM_GENDER + getGenderType(pid)]++;
-		}else {
+		} else {
 			super.applyTreatment(currentTime, infId, pid, inf_stage);
 		}
 
@@ -256,6 +282,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	@Override
 	protected void postTimeStep(int currentTime) {
 		super.postTimeStep(currentTime);
+			
 		if (currentTime % nUM_TIME_STEPS_PER_SNAP == 0) {
 			HashMap<Integer, int[]> countMap;
 			countMap = (HashMap<Integer, int[]>) sim_output.get(SIM_OUTPUT_KEY_TREATMENT_NON_VIABLE);
@@ -287,7 +314,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	@SuppressWarnings("unchecked")
 	protected void postSimulation() {
 		super.postSimulation();
-		
+
 		String key, fileName;
 		HashMap<Integer, int[]> countMap;
 		String filePrefix = this.getRunnableId() == null ? "" : this.getRunnableId();
@@ -383,7 +410,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 					filePrefix + "Infected_All_Stages_" + Simulation_ClusterModelTransmission.FILENAME_PREVALENCE_SITE,
 					cMAP_SEED, sIM_SEED);
 			try {
-				PrintWriter pWri = new PrintWriter(new FileWriter(new java.io.File(baseDir, fileName)));
+				PrintWriter pWri = new PrintWriter(new java.io.File(baseDir, fileName));
 				Integer[] timeArr = infected_site_stage_count.keySet().toArray(new Integer[0]);
 				Arrays.sort(timeArr);
 				ArrayList<String[]> col_names = new ArrayList<>();
