@@ -62,6 +62,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	public static final String PROP_PROB_NON_VIABLE_TRANSMISSION = "PROP_PROB_NON_VIABLE_TRANSMISSION";
 	public static final String PROP_DUR_ADJ_NON_VIABLE_TRANSMISSION = "PROP_DUR_ADJ_NON_VIABLE_TRANSMISSION";
 
+	protected HashMap<Integer, int[][]> map_non_viable_inf_until; // Key=PID,V=int[INF_ID][SITE]
+
 	public Runnable_ClusterModel_Viability(long cMap_seed, long sim_seed, ContactMap base_cMap, Properties prop) {
 		super(cMap_seed, sim_seed, base_cMap, prop, num_inf, num_site, num_act);
 		rng_viability = new MersenneTwisterRandomGenerator(sim_seed);
@@ -105,6 +107,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 		optParameter_optionsTar = new Object[] { prob_non_viabile_from_treatment, dur_adj_non_viable_from_treatment,
 				prob_non_viabile_from_transmission, dur_adj_non_viable_from_transmission };
+
+		map_non_viable_inf_until = new HashMap<>();
 	}
 
 	@Override
@@ -160,38 +164,12 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	}
 
 	@Override
-	public void refreshField(int fieldId, int currentTime, boolean clearAll, String orginal_field) {		
-		super.refreshField(fieldId, currentTime, clearAll, orginal_field);		
-	}
-
-	@Override
-	protected void simulate_transmission_success_act(int currentTime, int inf_id, Integer pid_inf_src, int pid_inf_tar,
-			int src_site, int tar_site) {
-		if (inf_id == 1) {
-
-			ArrayList<Integer> infect_arr = map_currently_infectious.get(String.format("1,%d", src_site));
-
-			String disp = String.format("Success: %d: %d (%d)-> %d (%d) total=%d RNG=%d", currentTime, pid_inf_src, src_site,
-					pid_inf_tar, tar_site, infect_arr.size(), RNG.nextLong());
-			System.out.println(disp);
-		}
-		super.simulate_transmission_success_act(currentTime, inf_id, pid_inf_src, pid_inf_tar, src_site, tar_site);
-	}
-
-	@Override
 	protected void simulate_transmission_failed_act(int currentTime, int inf_id, Integer pid_inf_src, int pid_inf_tar,
 			int src_site, int tar_site) {
-		if (inf_id == 1) {
-			ArrayList<Integer> infect_arr = map_currently_infectious.get(String.format("1,%d", src_site));
-			String disp = String.format("Failed: %d: %d (%d)-> %d (%d) total=%d RNG=%d", currentTime, pid_inf_src, src_site,
-					pid_inf_tar, tar_site, infect_arr.size(), RNG.nextLong());
-			System.out.println(disp);
-
-		}
-
 		// Non-viable from transmission
 		super.simulate_transmission_failed_act(currentTime, inf_id, pid_inf_src, pid_inf_tar, src_site, tar_site);
 		if (prob_non_viabile_from_transmission[inf_id][src_site][tar_site] > 0) {
+
 			if (rng_viability.nextFloat() < prob_non_viabile_from_transmission[inf_id][src_site][tar_site]) {
 				int non_via_duration_range = Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][1]
 						- dur_adj_non_viable_from_transmission[inf_id][tar_site][0]);
@@ -200,35 +178,54 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 						+ (non_via_duration_range > 0 ? rng_viability.nextInt(non_via_duration_range) : 0);
 
 				if (non_viable_until > currentTime) {
-					int[][] inf_stage = map_currrent_infection_stage.get(pid_inf_tar);
-					if (inf_stage == null) {
-						inf_stage = new int[NUM_INF][NUM_SITE];
-						for (int[] stage_by_infection : inf_stage) {
-							Arrays.fill(stage_by_infection, AbstractIndividualInterface.INFECT_S);
-						}
-						map_currrent_infection_stage.put(pid_inf_tar, inf_stage);
+					int[][] nv_entry = map_non_viable_inf_until.get(pid_inf_tar);
+					if (nv_entry == null) {
+						nv_entry = new int[NUM_INF][NUM_SITE];
+						map_non_viable_inf_until.put(pid_inf_tar, nv_entry);
 					}
-					int[][] infection_state_switch = map_infection_stage_switch.get(pid_inf_tar);
-					if (infection_state_switch == null) {
-						infection_state_switch = new int[NUM_INF][NUM_SITE];
-						map_infection_stage_switch.put(pid_inf_tar, infection_state_switch);
-					}
-
-					inf_stage[inf_id][tar_site] = STAGE_ID_NON_VIABLE[inf_id][tar_site];
-					updateInfectionStage(pid_inf_tar, inf_id, tar_site, STAGE_ID_NON_VIABLE[inf_id][tar_site],
-							currentTime, inf_stage, infection_state_switch, non_viable_until - currentTime);
+					nv_entry[inf_id][tar_site] = non_viable_until;
 				}
-
 			}
-
 		}
 	}
 
 	@Override
-	protected boolean isValidInfectionTargetSite(int inf_id, int tar_site, int[][] tar_infection_stages) {
-		return super.isValidInfectionTargetSite(inf_id, tar_site, tar_infection_stages)
-				|| ((STAGE_ID_NON_VIABLE[inf_id] != null)
-						&& (tar_infection_stages[inf_id][tar_site] == STAGE_ID_NON_VIABLE[inf_id][tar_site]));
+	protected void testPerson(int currentTime, int pid, int infIncl, int siteIncl, int[][] cumul_treatment_by_person) {
+		// Additional adjustment for non-viability infection
+		int[][] nv_stat = map_non_viable_inf_until.get(pid);
+		ArrayList<int[]> post_test_reset = new ArrayList<>(); // int[]{inf_id, site_id, pre_nv_stat}
+
+		int[][] current_stage_arr = map_currrent_infection_stage.get(pid);
+		if (nv_stat != null) {
+			if (current_stage_arr == null) {
+				current_stage_arr = new int[NUM_INF][NUM_SITE];
+				for (int[] stage_by_infection : current_stage_arr) {
+					Arrays.fill(stage_by_infection, AbstractIndividualInterface.INFECT_S);
+				}
+				map_currrent_infection_stage.put(pid, current_stage_arr);
+			}
+
+			for (int inf_id = 0; inf_id < NUM_INF; inf_id++) {
+				for (int site_id = 0; site_id < NUM_SITE; site_id++) {
+					if (currentTime < nv_stat[inf_id][site_id]) {
+						boolean is_infectious_stage = (current_stage_arr[inf_id][site_id] >= 0)
+								&& (lookupTable_infection_infectious_stages[inf_id][site_id]
+										& (1 << current_stage_arr[inf_id][site_id])) != 0;
+						if (!is_infectious_stage) {
+							post_test_reset.add(new int[] { inf_id, site_id, current_stage_arr[inf_id][site_id] });
+							current_stage_arr[inf_id][site_id] = STAGE_ID_NON_VIABLE[inf_id][site_id];
+						}
+					}
+				}
+			}
+		}
+
+		super.testPerson(currentTime, pid, infIncl, siteIncl, cumul_treatment_by_person);
+		// Assume treatment on nv infection won't change stage
+		for (int[] pre_nv : post_test_reset) {
+			current_stage_arr[pre_nv[0]][pre_nv[1]] = pre_nv[2];
+		}
+
 	}
 
 	@Override
@@ -269,10 +266,12 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		// Set non-viable infection post treatment
 		for (int siteId = 0; siteId < num_site; siteId++) {
 			if (becomeNonViableUtil[siteId] > 0) {
-				inf_stage[infId][siteId] = STAGE_ID_NON_VIABLE[infId][siteId];
-				updateInfectStageChangeSchedule(pid, infId, siteId, becomeNonViableUtil[siteId], currentTime + 1);
-				updateInfectionStage(pid, infId, siteId, STAGE_ID_NON_VIABLE[infId][siteId], currentTime, inf_stage,
-						infection_switch, becomeNonViableUtil[siteId] - currentTime);
+				int[][] nv_entry = map_non_viable_inf_until.get(pid);
+				if (nv_entry == null) {
+					nv_entry = new int[NUM_INF][NUM_SITE];
+					map_non_viable_inf_until.put(pid, nv_entry);
+				}
+				nv_entry[infId][siteId] = becomeNonViableUtil[siteId];
 			}
 		}
 
@@ -282,7 +281,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	@Override
 	protected void postTimeStep(int currentTime) {
 		super.postTimeStep(currentTime);
-			
+
 		if (currentTime % nUM_TIME_STEPS_PER_SNAP == 0) {
 			HashMap<Integer, int[]> countMap;
 			countMap = (HashMap<Integer, int[]>) sim_output.get(SIM_OUTPUT_KEY_TREATMENT_NON_VIABLE);
