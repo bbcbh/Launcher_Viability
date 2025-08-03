@@ -11,6 +11,8 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.math3.distribution.RealDistribution;
+
 import person.AbstractIndividualInterface;
 import random.MersenneTwisterRandomGenerator;
 import random.RandomGenerator;
@@ -43,6 +45,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 	protected float[][][] prob_non_viabile_from_transmission; // new float[num_inf][num_site_from][num_site_to];
 	protected float[][][] dur_adj_non_viable_from_transmission; // new float[num_inf][num_site]{parameter};
+	protected transient RealDistribution[][] dur_dist_non_viable_from_transmission; // new RealDistribution[num_inf][num_site];
+	
 
 	protected RandomGenerator rng_viability;
 	protected int[] cumul_treatment_non_viable = new int[NUM_GENDER * NUM_INF];
@@ -82,6 +86,10 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		dur_adj_non_viable_from_transmission = (float[][][]) PropValUtils
 				.propStrToObject(prop.getProperty(PROP_DUR_ADJ_NON_VIABLE_TRANSMISSION, defaultStr), float[][][].class);
 
+		
+		dur_dist_non_viable_from_transmission = new RealDistribution[num_inf][num_site];
+		
+		
 		for (int i = 0; i < num_inf; i++) {
 			for (int s = 0; s < num_site; s++) {
 				if (prop.getProperty(PROP_PROB_NON_VIABLE_TREATMENT) == null) {
@@ -173,17 +181,29 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 			if (rng_viability.nextFloat() < prob_non_viabile_from_transmission[inf_id][src_site][tar_site]) {
 				int non_via_duration_range = Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][1]
 						- dur_adj_non_viable_from_transmission[inf_id][tar_site][0]);
-				int non_viable_until = currentTime
-						+ Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][0])
-						+ (non_via_duration_range > 0 ? rng_viability.nextInt(non_via_duration_range) : 0);
+				int non_viable_until;
+				
+				if(non_via_duration_range > 0) {					
+					non_viable_until = currentTime
+							+ Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][0]) + 
+							rng_viability.nextInt(non_via_duration_range);
 
+				}else{										
+					if(dur_dist_non_viable_from_transmission[inf_id][tar_site] == null) {						
+						// Exp dist
+						dur_dist_non_viable_from_transmission[inf_id][tar_site] = generateGammaDistribution(rng_viability,
+								new double[] {dur_adj_non_viable_from_transmission[inf_id][tar_site][0], 
+										dur_adj_non_viable_from_transmission[inf_id][tar_site][0]});						
+					}
+					non_viable_until = currentTime + (int)  Math.round(dur_dist_non_viable_from_transmission[inf_id][tar_site].sample());					
+				}															
 				if (non_viable_until > currentTime) {
 					int[][] nv_entry = map_non_viable_inf_until.get(pid_inf_tar);
 					if (nv_entry == null) {
 						nv_entry = new int[NUM_INF][NUM_SITE];
 						map_non_viable_inf_until.put(pid_inf_tar, nv_entry);
 					}
-					nv_entry[inf_id][tar_site] = non_viable_until;
+					nv_entry[inf_id][tar_site] = Math.max(nv_entry[inf_id][tar_site], non_viable_until);
 				}
 			}
 		}
