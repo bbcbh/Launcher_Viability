@@ -39,6 +39,9 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 	protected static final int[][] STAGE_ID_NON_VIABLE = new int[][] { null, new int[] { 3, 3, 3, 3 },
 			new int[] { 3, 3, 3, 3 } };
+			
+    protected static final int[][] STAGE_ID_NON_VIABLE_SYM = new int[][] { null, new int[] { 4, 4, 4, 4 },
+				new int[] { 4, 4, 4, 4 } };
 
 	protected float[][] prob_non_viabile_from_treatment; // new float[num_inf][num_site];
 	protected float[][] dur_adj_non_viable_from_treatment; // new float[num_inf][num_site];
@@ -234,7 +237,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 										& (1 << current_stage_arr[inf_id][site_id])) != 0;
 						if (!is_infectious_stage) {
 							post_test_reset.add(new int[] { inf_id, site_id, current_stage_arr[inf_id][site_id] });
-							current_stage_arr[inf_id][site_id] = STAGE_ID_NON_VIABLE[inf_id][site_id];
+							current_stage_arr[inf_id][site_id] = pid_t <0 ? STAGE_ID_NON_VIABLE_SYM[inf_id][site_id] : STAGE_ID_NON_VIABLE[inf_id][site_id];
 						}
 					}
 				}
