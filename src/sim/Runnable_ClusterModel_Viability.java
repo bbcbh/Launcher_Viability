@@ -244,7 +244,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 			}
 		}
 
-		super.testPerson(currentTime, pid, infIncl, siteIncl, cumul_treatment_by_person);
+		super.testPerson(currentTime, pid_t, infIncl, siteIncl, cumul_treatment_by_person);
 		// Assume treatment on nv infection won't change stage
 		for (int[] pre_nv : post_test_reset) {
 			current_stage_arr[pre_nv[0]][pre_nv[1]] = pre_nv[2];
