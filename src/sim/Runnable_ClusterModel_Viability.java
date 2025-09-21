@@ -26,6 +26,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	private static final int num_inf = 3; // TP, NG and CT
 	private static final int num_site = 4;
 	private static final int num_act = 5;
+	
+	private final int NUM_GENDER = NUM_GRP;
 
 	// FILENAME_PREVALENCE_PERSON, FILENAME_CUMUL_INCIDENCE_PERSON
 	private static final int[] COL_SEL_INF_GENDER = new int[] { 2, 6, 10 };
@@ -299,6 +301,10 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 			}
 		}
 
+	}
+	
+	private int getGenderType(int pid) {
+		return getPersonGrp(pid);
 	}
 
 	@SuppressWarnings("unchecked")
