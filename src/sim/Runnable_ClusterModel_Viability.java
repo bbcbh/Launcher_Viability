@@ -215,7 +215,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	}
 
 	@Override
-	protected void testPerson(int currentTime, int pid_t, int infIncl, int siteIncl, int[][] cumul_treatment_by_person) {		
+	public void testPerson(int currentTime, int pid_t, int infIncl, int siteIncl, int[][] cumul_treatment_by_person) {		
 		int pid = Math.abs(pid_t); // Symptomatic or one off test if PID < 0						
 		// Additional adjustment for non-viability infection
 		int[][] nv_stat = map_non_viable_inf_until.get(pid);
