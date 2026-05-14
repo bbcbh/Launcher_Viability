@@ -26,7 +26,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	private static final int num_inf = 3; // TP, NG and CT
 	private static final int num_site = 4;
 	private static final int num_act = 5;
-	
+
 	private final int NUM_GENDER = NUM_GRP;
 
 	// FILENAME_PREVALENCE_PERSON, FILENAME_CUMUL_INCIDENCE_PERSON
@@ -41,17 +41,17 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 	protected static final int[][] STAGE_ID_NON_VIABLE = new int[][] { null, new int[] { 3, 3, 3, 3 },
 			new int[] { 3, 3, 3, 3 } };
-			
-    protected static final int[][] STAGE_ID_NON_VIABLE_SYM = new int[][] { null, new int[] { 4, 4, 4, 4 },
-				new int[] { 4, 4, 4, 4 } };
+
+	protected static final int[][] STAGE_ID_NON_VIABLE_SYM = new int[][] { null, new int[] { 4, 4, 4, 4 },
+			new int[] { 4, 4, 4, 4 } };
 
 	protected float[][] prob_non_viabile_from_treatment; // new float[num_inf][num_site];
 	protected float[][] dur_adj_non_viable_from_treatment; // new float[num_inf][num_site];
 
 	protected float[][][] prob_non_viabile_from_transmission; // new float[num_inf][num_site_from][num_site_to];
 	protected float[][][] dur_adj_non_viable_from_transmission; // new float[num_inf][num_site]{parameter};
-	protected transient RealDistribution[][] dur_dist_non_viable_from_transmission; // new RealDistribution[num_inf][num_site];
-	
+	protected transient RealDistribution[][] dur_dist_non_viable_from_transmission; // new
+																					// RealDistribution[num_inf][num_site];
 
 	protected RandomGenerator rng_viability;
 	protected int[] cumul_treatment_non_viable = new int[NUM_GENDER * NUM_INF];
@@ -91,10 +91,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		dur_adj_non_viable_from_transmission = (float[][][]) PropValUtils
 				.propStrToObject(prop.getProperty(PROP_DUR_ADJ_NON_VIABLE_TRANSMISSION, defaultStr), float[][][].class);
 
-		
 		dur_dist_non_viable_from_transmission = new RealDistribution[num_inf][num_site];
-		
-		
+
 		for (int i = 0; i < num_inf; i++) {
 			for (int s = 0; s < num_site; s++) {
 				if (prop.getProperty(PROP_PROB_NON_VIABLE_TREATMENT) == null) {
@@ -187,21 +185,22 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 				int non_via_duration_range = Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][1]
 						- dur_adj_non_viable_from_transmission[inf_id][tar_site][0]);
 				int non_viable_until;
-				
-				if(non_via_duration_range > 0) {					
-					non_viable_until = currentTime
-							+ Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][0]) + 
-							rng_viability.nextInt(non_via_duration_range);
 
-				}else{										
-					if(dur_dist_non_viable_from_transmission[inf_id][tar_site] == null) {						
+				if (non_via_duration_range > 0) {
+					non_viable_until = currentTime
+							+ Math.round(dur_adj_non_viable_from_transmission[inf_id][tar_site][0])
+							+ rng_viability.nextInt(non_via_duration_range);
+
+				} else {
+					if (dur_dist_non_viable_from_transmission[inf_id][tar_site] == null) {
 						// Exp dist
-						dur_dist_non_viable_from_transmission[inf_id][tar_site] = generateGammaDistribution(rng_viability,
-								new double[] {dur_adj_non_viable_from_transmission[inf_id][tar_site][0], 
-										dur_adj_non_viable_from_transmission[inf_id][tar_site][0]});						
+						dur_dist_non_viable_from_transmission[inf_id][tar_site] = generateGammaDistribution(
+								rng_viability, new double[] { dur_adj_non_viable_from_transmission[inf_id][tar_site][0],
+										dur_adj_non_viable_from_transmission[inf_id][tar_site][0] });
 					}
-					non_viable_until = currentTime + (int)  Math.round(dur_dist_non_viable_from_transmission[inf_id][tar_site].sample());					
-				}															
+					non_viable_until = currentTime
+							+ (int) Math.round(dur_dist_non_viable_from_transmission[inf_id][tar_site].sample());
+				}
 				if (non_viable_until > currentTime) {
 					int[][] nv_entry = map_non_viable_inf_until.get(pid_inf_tar);
 					if (nv_entry == null) {
@@ -215,8 +214,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 	}
 
 	@Override
-	public void testPerson(int currentTime, int pid_t, int infIncl, int siteIncl, int[][] cumul_treatment_by_person) {		
-		int pid = Math.abs(pid_t); // Symptomatic or one off test if PID < 0						
+	public void testPerson(int currentTime, int pid_t, int infIncl, int siteIncl, int[][] cumul_treatment_by_person) {
+		int pid = Math.abs(pid_t); // Symptomatic or one off test if PID < 0
 		// Additional adjustment for non-viability infection
 		int[][] nv_stat = map_non_viable_inf_until.get(pid);
 		ArrayList<int[]> post_test_reset = new ArrayList<>(); // int[]{inf_id, site_id, pre_nv_stat}
@@ -239,7 +238,8 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 										& (1 << current_stage_arr[inf_id][site_id])) != 0;
 						if (!is_infectious_stage) {
 							post_test_reset.add(new int[] { inf_id, site_id, current_stage_arr[inf_id][site_id] });
-							current_stage_arr[inf_id][site_id] = pid_t <0 ? STAGE_ID_NON_VIABLE_SYM[inf_id][site_id] : STAGE_ID_NON_VIABLE[inf_id][site_id];
+							current_stage_arr[inf_id][site_id] = pid_t < 0 ? STAGE_ID_NON_VIABLE_SYM[inf_id][site_id]
+									: STAGE_ID_NON_VIABLE[inf_id][site_id];
 						}
 					}
 				}
@@ -256,7 +256,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 
 	@Override
 	protected void applyTreatment(int currentTime, int infId, int pid, int[][] inf_stage) {
-		int[][] infection_switch = map_infection_stage_switch.get(pid);
+		int[][] infection_switch = map_infection_stage_switch.get(Math.abs(pid));
 		boolean hasInfectiousPreTreatment = false;
 		int[] becomeNonViableUtil = new int[num_site];
 		for (int siteId = 0; siteId < num_site; siteId++) {
@@ -302,7 +302,7 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		}
 
 	}
-	
+
 	private int getGenderType(int pid) {
 		return getPersonGrp(pid);
 	}
