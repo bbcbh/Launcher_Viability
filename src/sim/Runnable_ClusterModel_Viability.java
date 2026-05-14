@@ -221,14 +221,14 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		int[][] nv_stat = map_non_viable_inf_until.get(pid);
 		ArrayList<int[]> post_test_reset = new ArrayList<>(); // int[]{inf_id, site_id, pre_nv_stat}
 
-		int[][] current_stage_arr = map_currrent_infection_stage.get(pid);
+		int[][] current_stage_arr = map_current_infection_stage.get(pid);
 		if (nv_stat != null) {
 			if (current_stage_arr == null) {
 				current_stage_arr = new int[NUM_INF][NUM_SITE];
 				for (int[] stage_by_infection : current_stage_arr) {
 					Arrays.fill(stage_by_infection, AbstractIndividualInterface.INFECT_S);
 				}
-				map_currrent_infection_stage.put(pid, current_stage_arr);
+				map_current_infection_stage.put(pid, current_stage_arr);
 			}
 
 			for (int inf_id = 0; inf_id < NUM_INF; inf_id++) {
