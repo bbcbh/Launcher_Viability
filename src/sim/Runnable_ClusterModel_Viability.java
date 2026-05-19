@@ -307,12 +307,51 @@ public class Runnable_ClusterModel_Viability extends Runnable_ClusterModel_Multi
 		return getPersonGrp(pid);
 	}
 
+	@Override
+	protected ArrayList<Integer> getValidSeedStages(int inf_id, int site_index) {
+		ArrayList<Integer> validSeedStages = new ArrayList<>();
+
+		if (inf_id == 1 || inf_id == 2) {
+			// Expose and infected for both NG and CT
+			validSeedStages.add(0);
+			validSeedStages.add(1);
+		}
+
+		return validSeedStages;
+	}
+
+	@Override
+	protected boolean isValidInfectionTargetSite(int inf_id, int tar_site, int[][] tar_infection_stages) {	
+		// Include non-viable as valid infection target site
+		return super.isValidInfectionTargetSite(inf_id, tar_site, tar_infection_stages) 
+				|| tar_infection_stages[inf_id][tar_site] == STAGE_ID_NON_VIABLE[inf_id][tar_site] 
+						|| tar_infection_stages[inf_id][tar_site] == STAGE_ID_NON_VIABLE_SYM[inf_id][tar_site];
+	}
+
+	@Override
+	protected int[] updateCMap(ContactMap cMap, int currentTime, Integer[][] edges_array, int edges_array_pt,
+			HashMap<Integer, ArrayList<Integer[]>> edgesToRemove, ArrayList<Integer> included_pids) {
+		return super.updateCMap(cMap, currentTime, edges_array, edges_array_pt, edgesToRemove, included_pids);
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void postTimeStep(int currentTime) {
 		super.postTimeStep(currentTime);
 
+		
+
 		if (currentTime % nUM_TIME_STEPS_PER_SNAP == 0) {
+			
+			// TODO: Debug print stat
+			String[] inf_keys = map_currently_infectious.keySet().toArray(new String[0]);
+			Arrays.sort(inf_keys);
+			System.out.printf("T = %5d", currentTime);
+			for (String inf : inf_keys) {
+				System.out.printf(" [%s] = %5d", inf, map_currently_infectious.get(inf).size());
+			}
+			System.out.printf(" TS = %tc.\n", System.currentTimeMillis());
+
 			HashMap<Integer, int[]> countMap;
 			countMap = (HashMap<Integer, int[]>) sim_output.get(SIM_OUTPUT_KEY_TREATMENT_NON_VIABLE);
 			if (countMap == null) {
